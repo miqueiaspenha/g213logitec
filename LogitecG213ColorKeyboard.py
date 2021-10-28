@@ -5,6 +5,8 @@ import usb.core
 import usb.util
 import binascii
 
+hexColor = ff0000
+
 idVendor = 0x046d
 idProduct = 0xc336
 colorCommand = '11ff0c3a{}01{}0200000000000000000000'
@@ -47,5 +49,5 @@ def sendColorCommand(colorHex, field = 0):
     sendData(commandHex)
 
 connect()
-sendColorCommand('ff0000')
+sendColorCommand(hexColor)
 disconnect()
