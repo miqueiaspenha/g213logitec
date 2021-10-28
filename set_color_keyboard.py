@@ -1,39 +1,52 @@
 #!/usr/bin/env python3
 
+import sys
 import usb.core
 import usb.util
 import binascii
-import time
 
-standardColorhex = 'ff0000'
 idVendor = 0x046d
 idProduct = 0xc336
-initialCommand = '11ff0c0d00000000000000000000000000000000'
-colorRedCommand = '11ff0c3d0001ff00000200000000000000000000'
-
+colorCommand = '11ff0c3a{}01{}0200000000000000000000'
 
 bmRequestType = 0x21
 bmRequest = 0x09
 wValue = 0x0211
 wIndex = 0x0001
 
-device = usb.core.find(idVendor=idVendor, idProduct=idProduct)
+bEndpointAddress = 0x82
 
-if device.is_kernel_driver_active(wIndex):
-    device.detach_kernel_driver(wIndex)
+isDetached = False
+device = None
 
-if device is None:
-    print('USB device not found!')
-    exit(0)
+def connect():
+    global device, isDetached
+    
+    device = usb.core.find(idVendor=idVendor, idProduct=idProduct)
 
-device.ctrl_transfer(bmRequestType, bmRequest, wValue, wIndex, binascii.unhexlify(initialCommand))
-time.sleep(0.1)
-retorno = device.ctrl_transfer(bmRequestType, bmRequest, wValue, wIndex, binascii.unhexlify(colorRedCommand))
-time.sleep(0.1)
-retorno = device.ctrl_transfer(bmRequestType, bmRequest, wValue, wIndex, 20)
+    if device is None:
+        print('USB device not found!')
+        sys.exit(1)
 
-#endpoint = device[0][(0,0)][0]
-#print(endpoint)
+    if device.is_kernel_driver_active(wIndex):
+        device.detach_kernel_driver(wIndex)
+        isDetached = True
 
-usb.util.dispose_resources(device)
-device.attach_kernel_driver(wIndex)
+
+def disconnect():
+    usb.util.dispose_resources(device)
+    if isDetached:
+        device.attach_kernel_driver(wIndex)
+
+def sendData(dataHex):
+    device.ctrl_transfer(bmRequestType, bmRequest, wValue, wIndex, binascii.unhexlify(dataHex))
+    device.read(bEndpointAddress, 20)
+
+def sendColorCommand(colorHex, field = 0):
+    fieldHex = format(field, '02x')
+    commandHex = colorCommand.format(fieldHex, colorHex)    
+    sendData(commandHex)
+
+connect()
+sendColorCommand('ff0000')
+disconnect()
