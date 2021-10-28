@@ -32,7 +32,6 @@ def connect():
         device.detach_kernel_driver(wIndex)
         isDetached = True
 
-
 def disconnect():
     usb.util.dispose_resources(device)
     if isDetached:
